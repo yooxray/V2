@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leather Stock Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .modal-transition { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-2">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-800">LeatherLog <span class="text-indigo-600 text-sm font-medium">Pro</span></h1>
+        </div>
+        <button onclick="toggleModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Add New Entry
+        </button>
+    </nav>
+
+    <main class="p-6 max-w-[1600px] mx-auto">
+        <!-- Stats/Dashboard Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm font-medium">Total Documents</p>
+                <h3 class="text-3xl font-bold mt-1" id="totalDocs">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm font-medium">Total Stock Quantity</p>
+                <h3 class="text-3xl font-bold mt-1 text-indigo-600" id="totalStock">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm font-medium">Last Updated</p>
+                <h3 class="text-3xl font-bold mt-1 text-slate-700" id="lastUpdated">-</h3>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-4">
+                <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search by color, type, or document #..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 w-full md:w-96 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                            <th class="px-6 py-4 border-b border-slate-100">Date</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Doc #</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Leather Details</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Pattern</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Specs (Thick/Size)</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Stock</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Notes</th>
+                            <th class="px-6 py-4 border-b border-slate-100 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="toggleModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800" id="modalTitle">Add Product Information</h2>
+                <button onclick="toggleModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+            </div>
+            
+            <form id="inventoryForm" class="p-8">
+                <input type="hidden" id="editIndex">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Entry Date</label>
+                        <input type="date" id="iDate" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Document Number</label>
+                        <input type="text" id="iDocNum" required placeholder="DOC-1001" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Color</label>
+                        <input type="text" id="iColor" required placeholder="e.g. Cognac" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Type of Leather</label>
+                        <input type="text" id="iType" required placeholder="e.g. Full Grain" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Pattern</label>
+                        <input type="text" id="iPattern" required placeholder="e.g. Pebble" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Thickness (mm)</label>
+                        <input type="text" id="iThick" required placeholder="1.2mm" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Size (sq ft/m²)</label>
+                        <input type="text" id="iSize" required placeholder="18 sq ft" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Number of Stocks</label>
+                        <input type="number" id="iStock" required placeholder="0" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Note</label>
+                        <textarea id="iNote" rows="2" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                    </div>
+                </div>
+                <div class="mt-8 flex gap-3">
+                    <button type="button" onclick="toggleModal()" class="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Save Information</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('leatherInventory')) || [];
+
+        function renderData() {
+            const body = document.getElementById('inventoryBody');
+            body.innerHTML = '';
+            
+            let stockCounter = 0;
+
+            inventory.forEach((item, index) => {
+                stockCounter += parseInt(item.stock);
+                body.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="px-6 py-4 font-medium text-slate-500">${item.date}</td>
+                        <td class="px-6 py-4 font-semibold text-indigo-600">${item.docNum}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-800">${item.color}</div>
+                            <div class="text-xs text-slate-400">${item.type}</div>
+                        </td>
+                        <td class="px-6 py-4 text-slate-600">${item.pattern}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${item.thick}</span>
+                            <span class="text-xs text-slate-400 ml-1">${item.size}</span>
+                        </td>
+                        <td class="px-6 py-4 font-bold ${item.stock < 5 ? 'text-red-500' : 'text-slate-800'}">${item.stock}</td>
+                        <td class="px-6 py-4 text-slate-500 italic max-w-xs truncate">${item.note || '-'}</td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="editItem(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">Edit</button>
+                                <button onclick="deleteItem(${index})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Update Stats
+            document.getElementById('totalDocs').innerText = inventory.length;
+            document.getElementById('totalStock').innerText = stockCounter;
+            document.getElementById('lastUpdated').innerText = inventory.length > 0 ? new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
+            
+            localStorage.setItem('leatherInventory', JSON.stringify(inventory));
+        }
+
+        document.getElementById('inventoryForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editIndex = document.getElementById('editIndex').value;
+            const item = {
+                date: document.getElementById('iDate').value,
+                docNum: document.getElementById('iDocNum').value,
+                color: document.getElementById('iColor').value,
+                type: document.getElementById('iType').value,
+                pattern: document.getElementById('iPattern').value,
+                thick: document.getElementById('iThick').value,
+                size: document.getElementById('iSize').value,
+                stock: document.getElementById('iStock').value,
+                note: document.getElementById('iNote').value
+            };
+
+            if (editIndex === "") inventory.push(item);
+            else inventory[editIndex] = item;
+
+            toggleModal();
+            renderData();
+        });
+
+        function editItem(index) {
+            const item = inventory[index];
+            document.getElementById('iDate').value = item.date;
+            document.getElementById('iDocNum').value = item.docNum;
+            document.getElementById('iColor').value = item.color;
+            document.getElementById('iType').value = item.type;
+            document.getElementById('iPattern').value = item.pattern;
+            document.getElementById('iThick').value = item.thick;
+            document.getElementById('iSize').value = item.size;
+            document.getElementById('iStock').value = item.stock;
+            document.getElementById('iNote').value = item.note;
+            document.getElementById('editIndex').value = index;
+            document.getElementById('modalTitle').innerText = "Edit Leather Entry";
+            toggleModal();
+        }
+
+        function deleteItem(index) {
+            if(confirm('Permanently delete this record?')) {
+                inventory.splice(index, 1);
+                renderData();
+            }
+        }
+
+        function toggleModal() {
+            const modal = document.getElementById('productModal');
+            modal.classList.toggle('hidden');
+            if (modal.classList.contains('hidden')) {
+                document.getElementById('inventoryForm').reset();
+                document.getElementById('editIndex').value = "";
+                document.getElementById('modalTitle').innerText = "Add Product Information";
+            }
+        }
+
+        function filterProducts() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.getElementById('inventoryBody').getElementsByTagName('tr');
+            for (let row of rows) {
+                row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+            }
+        }
+
+        renderData();
+    </script>
+</body>
+</html>
